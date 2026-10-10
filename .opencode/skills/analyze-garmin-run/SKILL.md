@@ -20,7 +20,7 @@ Evaluate runs against their **intended training purpose**, combining two zone sy
 
 **Loading zones:** Read the JSON file and use the zones defined there. The file contains:
 - `vdot`: the calculated VDOT value
-- `source`: description of the test used (e.g., "10K em 41:14")
+- `source`: description of the test used (e.g., "10K em 43:16")
 - `test_date`: when the test was performed
 - `zones`: the 5 pace zones (easy, marathon, threshold, interval, repetition) with pace ranges and m/s values
 

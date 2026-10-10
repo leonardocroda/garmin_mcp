@@ -51,50 +51,50 @@ python .opencode/skills/calibrate-garmin-zones/calibrate_vdot.py --force
 
 As skills `analyze-garmin-run` e `create-garmin-training` leem as zonas do arquivo `vdot_zones.json`. Se o arquivo não existir, elas instruem o usuário a rodar esta skill primeiro.
 
-## Exemplo de saída (vdot_zones.json)
+## Exemplo de saída (vdot_zones.json — dados fictícios)
 
 ```json
 {
-  "vdot": 50.2,
-  "source": "10K em 41:15",
-  "test_date": "2026-10-03",
-  "distancia_metros": 10012,
-  "tempo_segundos": 2475,
+  "vdot": 45.0,
+  "source": "10K em 43:16",
+  "test_date": "2026-01-10",
+  "distancia_metros": 10000,
+  "tempo_segundos": 2596,
   "zones": {
     "easy": {
-      "pace_range": "5:51/km-4:53/km",
-      "ms_min": 2.851,
-      "ms_max": 3.418,
+      "pace_range": "6:31/km-5:27/km",
+      "ms_min": 2.555,
+      "ms_max": 3.063,
       "description": "Recuperação, base aeróbica, aquecimento/desaquecimento"
     },
     "marathon": {
-      "pace": "4:30/km",
-      "ms": 3.701,
+      "pace": "5:02/km",
+      "ms": 3.317,
       "description": "Ritmo de maratona, longões"
     },
     "threshold": {
-      "pace_range": "4:14/km-4:27/km",
-      "ms_min": 3.749,
-      "ms_max": 3.931,
+      "pace_range": "4:58/km-4:44/km",
+      "ms_min": 3.36,
+      "ms_max": 3.524,
       "description": "Limiar de lactato, tempo runs"
     },
     "interval": {
-      "pace_range": "3:59/km-3:49/km",
-      "ms_min": 4.183,
-      "ms_max": 4.36,
+      "pace_range": "4:27/km-4:16/km",
+      "ms_min": 3.749,
+      "ms_max": 3.908,
       "description": "VO2max, esforços de 2-4 min"
     },
     "repetition": {
-      "pace": "3:40/km",
-      "ms": 4.536,
+      "pace": "4:06/km",
+      "ms": 4.065,
       "description": "Repetições curtas, 800m-1km"
     }
   },
   "equivalencias": {
-    "5K": "3:58/km",
-    "10K": "4:07/km",
-    "Meia Maratona": "4:19/km",
-    "Maratona": "4:30/km"
+    "5K": "4:11/km",
+    "10K": "4:20/km",
+    "Meia Maratona": "4:31/km",
+    "Maratona": "5:02/km"
   }
 }
 ```

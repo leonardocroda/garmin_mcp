@@ -229,7 +229,7 @@ def entrevista_interativa() -> dict:
     # Perguntar tempo
     print()
     print("Qual foi o tempo total do teste?")
-    print("Formato: HH:MM:SS (ex: 00:41:14)")
+    print("Formato: HH:MM:SS (ex: 00:43:16)")
 
     while True:
         tempo_str = input("Tempo: ").strip()

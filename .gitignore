@@ -23,3 +23,6 @@ playground/*
 scratch/*
 tests/fixtures/captured/*
 !tests/fixtures/captured/poc_walk_run.json
+
+# Zonas VDOT pessoais (geradas pela skill de calibração — ficam só no PC de cada corredor)
+.opencode/skills/calibrate-garmin-zones/vdot_zones.json

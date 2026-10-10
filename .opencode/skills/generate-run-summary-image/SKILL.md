@@ -45,12 +45,12 @@ Write the fetched data to a JSON file, e.g. `~/.opencode/tmp/run_data_{activity_
 
 ```json
 {
-  "activity_id": "24588181266",
-  "date": "Sáb, 10 Out",
-  "location": "Londrina",
+  "activity_id": "1234567890",
+  "date": "Sáb, 10 Mai",
+  "location": "Sua Cidade",
   "workout_type": "tempo",
   "analysis_text": "...",
-  "vdot": 50.2,
+  "vdot": 45.0,
   "splits": [
     {
       "distance_m": 1000,

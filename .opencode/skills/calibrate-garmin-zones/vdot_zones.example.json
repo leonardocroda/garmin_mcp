@@ -1,0 +1,44 @@
+{
+  "_exemplo": "ZONAS FICTICIAS (VDOT 45) - apenas referencia de formato. Rode a skill calibrate-garmin-zones ('calibra minhas zonas') para gerar seu proprio vdot_zones.json com as SUAS zonas.",
+  "vdot": 45.0,
+  "source": "10K em 43:16",
+  "test_date": "2026-01-10",
+  "distancia_metros": 10000,
+  "tempo_segundos": 2596,
+  "zones": {
+    "easy": {
+      "pace_range": "6:31/km-5:27/km",
+      "ms_min": 2.555,
+      "ms_max": 3.063,
+      "description": "Recuperação, base aeróbica, aquecimento/desaquecimento"
+    },
+    "marathon": {
+      "pace": "5:02/km",
+      "ms": 3.317,
+      "description": "Ritmo de maratona, longões"
+    },
+    "threshold": {
+      "pace_range": "4:58/km-4:44/km",
+      "ms_min": 3.36,
+      "ms_max": 3.524,
+      "description": "Limiar de lactato, tempo runs"
+    },
+    "interval": {
+      "pace_range": "4:27/km-4:16/km",
+      "ms_min": 3.749,
+      "ms_max": 3.908,
+      "description": "VO2max, esforços de 2-4 min"
+    },
+    "repetition": {
+      "pace": "4:06/km",
+      "ms": 4.065,
+      "description": "Repetições curtas, 800m-1km"
+    }
+  },
+  "equivalencias": {
+    "5K": "4:11/km",
+    "10K": "4:20/km",
+    "Meia Maratona": "4:31/km",
+    "Maratona": "5:02/km"
+  }
+}
