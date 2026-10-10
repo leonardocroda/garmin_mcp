@@ -35,10 +35,6 @@
   .legend { display: flex; justify-content: center; gap: 24px; margin-top: 20px; flex-wrap: wrap; }
   .legend .item { display: flex; align-items: center; gap: 8px; font-size: 15px; color: var(--muted); font-weight: 600; }
   .legend .dot { width: 12px; height: 12px; border-radius: 3px; }
-  .legend .d2 { background: linear-gradient(135deg, #818cf8, #4f46e5); }
-  .legend .d3 { background: linear-gradient(135deg, #4ade80, #16a34a); }
-  .legend .d4 { background: linear-gradient(135deg, #94a3b8, #64748b); }
-  .legend .d5 { background: linear-gradient(135deg, #ef4444, #dc2626); }
   .analysis-card { background: var(--surface); border-radius: 28px; padding: 36px; border: 1px solid rgba(255,255,255,0.06); }
   .analysis-card .title { font-size: 16px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 3px; margin-bottom: 20px; }
   .analysis-card .text { font-size: 22px; color: var(--text); line-height: 1.8; }
@@ -64,7 +60,12 @@
       <div class="label">{{ result_label }}</div>
       <div class="time">{{ duration }}</div>
       <div class="unit">minutos</div>
-      <div class="distance">Distância: <b>{{ distance }}</b></div>
+      <div class="distance">Distância: <b>{{ distance }}</b>{{ vdot_line }}</div>
+    </div>
+
+    <div class="workout-badge">
+      <div class="title">Estrutura</div>
+      <div class="desc">{{ workout_structure }}</div>
     </div>
 
     <div class="stats-grid">
@@ -93,7 +94,7 @@
       </div>
       <div class="legend">
         {{ legend_items }}
-        <div class="item"><div class="dot d5"></div>FC</div>
+        <div class="item"><div class="dot" style="background: linear-gradient(135deg, #ef4444, #dc2626);"></div>FC</div>
       </div>
     </div>
 

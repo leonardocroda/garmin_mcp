@@ -1,6 +1,6 @@
 ---
 name: generate-run-summary-image
-description: Generate a beautiful, story-ready image (1080x1920) summarizing a Garmin running activity. Fetches live data from Garmin MCP, renders an elegant HTML template with combined pace+HR chart, and converts to PNG via Playwright. Use whenever the user wants to create a visual summary of a run for social media — e.g. "gera uma imagem do meu treino", "faz um story do meu 10km", "cria imagem para postar da minha corrida", "gera um resumo visual do meu longo de sábado".
+description: Generate a beautiful, story-ready image (1080x1920) summarizing a Garmin running activity. Fetches live data from Garmin MCP, renders an elegant HTML template with combined pace+HR chart, and converts to PNG via Playwright. Use whenever the user wants to create a visual summary of a run for social media — e.g. "gera uma imagem do meu treino", "faz um story do meu 10km", "cria imagem para postar da minha corrida", "gera um resumo visual do meu longo de sábado". Pairs with analyze-garmin-run: when an analysis already ran (or is requested together), reuse its data and inject its verdict as the analysis card.
 ---
 
 # Generate Run Summary Image Skill
@@ -33,114 +33,78 @@ get_weather(activity_id)            → temp, humidity, wind
 get_vdot_zones()                    → read from calibrate-garmin-zones/vdot_zones.json
 ```
 
-### Step 3 — Determine workout type (ASK if not explicit)
+### Step 3 — Workout type (OPTIONAL — affects texts only)
 
-**CRITICAL: Never infer the workout type automatically. Always ask the user if not explicit.**
+The chart NEVER depends on the workout type: colors, bars and legend come 100% from Garmin's own `intensityType` data (see the de-para in "Rendering reference"). The type is only used for the story texts (title, structure badge, footer) and the fallback analysis.
 
-Check if the user mentioned the workout type in their message:
-- "teste" / "test" / "prova" → race
-- "tiros" / "intervalado" / "8x800" → interval
-- "longão" / "longo" → long
-- "fácil" / "easy" / "recuperação" → easy
+If the user named the type in their message, pass it: `tempo` (sustentado), `interval` (tiros/intervalado), `race` (teste/prova), `long` (longão), `easy` (fácil/rodagem). If it is not explicit, either ask or **omit it** — omitted type renders neutral labels ("Corrida / X km") instead of inventing one.
 
-**If the type is NOT explicit in the message, ASK the user:**
-> "Que tipo de treino foi esse? (teste, tiros, longão, corrida fácil)"
+### Step 4 — Build the data file
 
-Only proceed after the user confirms the type.
+Write the fetched data to a JSON file, e.g. `~/.opencode/tmp/run_data_{activity_id}.json`:
 
-### Step 4 — Classify splits by type
-
-Based on the confirmed workout type:
-- **interval**: Use `intensity_type` from Garmin (WARMUP/ACTIVE/RECOVERY/COOLDOWN)
-- **race/long/easy**: All splits are "race" (Corrida) — Indigo
-
-**Never infer split types from pace or intensity fields for continuous runs.**
-
-### Step 4 — Calculate chart proportions
-
-**X-axis: proportional to TIME (not distance)**
-```
-total_time = sum of all split durations (seconds)
-available_width = 860px (from x=70 to x=930)
-scale = available_width / total_time
-each_split_width = split_duration * scale
+```json
+{
+  "activity_id": "24588181266",
+  "date": "Sáb, 10 Out",
+  "location": "Londrina",
+  "workout_type": "tempo",
+  "analysis_text": "...",
+  "vdot": 50.2,
+  "splits": [
+    {
+      "distance_m": 1000,
+      "duration_seconds": 308,
+      "pace_seconds": 308,
+      "avg_hr": 138,
+      "elevation_gain": 11,
+      "intensity": "WARMUP"
+    }
+  ]
+}
 ```
 
-**Y-axis: inversely proportional to pace, aligned to axis labels**
+- `workout_type`: **optional** — `tempo` | `interval` | `race` | `long` | `easy`. Affects ONLY the story texts; omit for neutral labels.
+- `analysis_text`: **optional handoff** — the verdict distilled from `analyze-garmin-run` (see "Chaining" below). Without it, the script falls back to a naive built-in analysis.
+- `vdot`: **optional** — from `.opencode/skills/calibrate-garmin-zones/vdot_zones.json`.
+- `splits[]`: per-km data from `get_activity_splits`; `intensity` is Garmin's own `intensityType` — structured workouts use `WARMUP` / `ACTIVE` (passo "corrida") / `RECOVERY` / `REST` / `WALK` / `COOLDOWN` / `OTHER`; free runs (auto-lap) come as `INTERVAL`. Pass it through unchanged — never invent or reinterpret it.
+- Optional text overrides (win over the type defaults): `title`, `highlight`, `structure`, `result_label`, `footer`, `vdot_label` — e.g. `structure: "8×800m"` when the real session structure is known.
+
+### Step 5 — Generate the image
+
+Run the script that lives next to this SKILL.md:
+
+```bash
+python generate_image.py --data-file run_data_{activity_id}.json [--output-dir DIR]
 ```
-min_pace = 180 (3:00/km) → y=40 (top)
-max_pace = 420 (7:00/km) → y=320 (bottom)
-normalized = (pace_sec - min_pace) / (max_pace - min_pace)
-y = 40 + normalized * 280
-height = 320 - y
-```
 
-**HR line (red #ef4444):**
-```
-hr_min = 110 bpm, hr_max = 190 bpm
-hr_y = 320 - ((hr - hr_min) / (hr_max - hr_min)) * 280
-```
+The script handles everything else (see "Rendering reference" below): split classification, chart proportions, SVG + legend, dynamic text, HTML render, and Playwright screenshot (1080×1920 @2x). Output: `run_summary_{activity_id}.png` — show it to the user with the file path.
 
-### Step 5 — Generate SVG chart
+## Rendering reference (what the script does internally)
 
-Build inline SVG with:
-- Grid lines (horizontal at 3:00, 4:00, 5:00, 6:00, 7:00/km)
-- Y-axis labels (left = pace, right = HR in red)
-- Colored bars for each split (width ∝ time, height ∝ inverse pace)
-- Red polyline (#ef4444, stroke-width=4) connecting HR values
-- Red dots at each HR data point
-- Pace labels on top of bars
-- Gradient fills for each bar
+- **Split classification — de-para 1:1 do `intensityType` do Garmin** (validado contra atividades reais; nada inventado):
 
-### Step 6 — Dynamic legend
+  | Garmin `intensityType` | App Garmin (PT) | Cor | Legenda |
+  |---|---|---|---|
+  | `WARMUP` | Aquecimento | azul céu | Aquecimento |
+  | `ACTIVE` / `RUN` | Corrida | indigo (herói) | Corrida |
+  | `INTERVAL` | (auto-lap corrida livre) | indigo (herói) | Corrida |
+  | `RECOVERY` | Recuperação | slate claro | Recuperação |
+  | `REST` | Descanso | slate escuro | Descanso |
+  | `COOLDOWN` | Desaquecimento | verde | Desaquecimento |
+  | `WALK` | Caminhada | violeta | Caminhada |
+  | `OTHER` | Outros | stone | Outros |
+  | *(vazio)* | corrida livre | indigo (herói) | Corrida |
 
-Show only legend items for split types that exist in the data:
-- "warm" exists → show "Aquecimento" (blue)
-- "race" exists → show "Corrida" (indigo)
-- "rec" exists → show "Recuperação" (green)
-- "cool" exists → show "Desaquecimento" (gray)
-- Always show "FC" (red)
+  Princípio da paleta: intensidade = energia da cor — o passo "Corrida" (bloco de trabalho) é o herói no indigo (acento do template, contraste máximo com a linha vermelha de FC); passivos (recuperação/descanso) em tons neutros de slate; bookends suaves (aquecimento azul céu, desaquecimento verde). As cores vivem em `COLORS` no script — fonte única: barras e pontos da legenda leem dali (a legenda injeta estilos inline).
 
-### Step 7 — Dynamic text content
-
-**Title & Highlight:**
-- Interval workout: "Treino de Tiros" / "8×800m"
-- Race/test: "Teste de 10K" / "10K"
-- Long run: "Longão" / distance
-- Easy run: "Corrida" / "Fácil"
-- Default: "Corrida" / date
-
-**Workout structure badge:**
-- Interval: "Aquecimento + 8×800m + Desaquecimento"
-- Race: "Prova de 10K"
-- Long: "Longão de X km"
-- Easy: "Corrida fácil"
-
-**Result label:**
-- Race/test: "Tempo Final"
-- Interval: "Tempo Total"
-- Default: "Tempo Total"
-
-**Footer text (dynamic by workout type):**
-- Interval: "Tiros é velocidade"
-- Race: "Correr é liberdade"
-- Long: "Correr é liberdade"
-- Easy: "Correr é liberdade"
-- Default: "Correr é liberdade"
-
-**VDOT card (if available):**
-- Interval: "Consistência" / range of work rep paces
-- Race: "VDOT" / value
-- Long: "VDOT" / value
-- Easy: "VDOT" / value
-
-### Step 8 — Render and screenshot
-
-1. Render HTML template (simple string replacement, no Jinja2 needed)
-2. Save to `~/.opencode/tmp/run_summary_{activity_id}.html`
-3. Screenshot with Playwright (viewport 1080×1920, deviceScaleFactor=2)
-4. Save to `~/.opencode/tmp/run_summary_{activity_id}.png`
-5. Show image to user with file path
+  O tipo de treino (`workout_type`) NÃO participa da classificação — só dos textos.
+- **Chart**: X-axis proportional to TIME (not distance); Y-axis inversely proportional to pace (3:00/km top → 7:00/km bottom, com clamp — passos mais lentos ficam no fundo com altura mínima); red HR line (#ef4444) scaled 110–190 bpm with dots at each split; pace labels on bars; gradient fills per step type. Details in "Chart specifications" below.
+- **Dynamic legend**: only step types present in the data (labels do app do Garmin) + always "FC".
+- **Structure badge (default)**: derived from the real steps, summing distance per type — e.g. "Aquecimento 2,0km + Corrida 7,1km + Desaquecimento 2,0km". Overridable via `structure`.
+- **Dynamic text**: `workout_type` sets title/highlight/footer defaults (`tempo` → "Treino de Tempo"; omitted → neutral "Corrida / X km"); overrides win.
+- **Analysis card**: uses `analysis_text` when present; otherwise the naive built-in fallback.
+- **VDOT**: appended to the main card distance line when `vdot` is present in the JSON.
 
 ## Chart specifications
 
@@ -150,13 +114,25 @@ Show only legend items for split types that exist in the data:
 - **Pace labels**: On top of bars
 - **HR line**: Red (#ef4444), stroke-width=4, round caps
 - **HR dots**: Red circles, r=6
-- **Bar colors**: By split type (warm=blue, race=indigo, rec=green, cool=gray, int=orange)
+- **Bar colors**: pelo tipo de passo do Garmin (de-para acima): aquecimento=azul céu, corrida=indigo, recuperação=slate claro, descanso=slate escuro, desaquecimento=verde, caminhada=violeta, outros=stone — todas definidas em `COLORS` (fonte única; a legenda injeta os gradientes inline)
+
+## Chaining with analyze-garmin-run
+
+Both skills share the activity resolution and core data fetch. When the user asks for analysis + image together, or asks for the image right after an analysis:
+
+**Coming from `analyze-garmin-run` (preferred flow):**
+- **Skip Steps 1–3** — the activity is already resolved, the data is already fetched, and the intent is already determined there. Reuse the fetched activity + splits + weather; do not re-call Garmin.
+- **Pass the intent as `workout_type`** (texts only): sustentado/tempo → `tempo`, tiros/intervalado → `interval`, race/teste → `race`, longão → `long`, fácil/rodagem → `easy` — or omit for neutral labels. The chart needs nothing from the type: colors and legend come from Garmin's `intensityType` alone.
+- **Inject the verdict**: the analysis skill distills its verdict into 2–3 plain-text sentences in Portuguese (≤ ~320 chars) passed as `analysis_text` — it replaces the naive built-in analysis in the card. The card inserts raw HTML: markdown does NOT render; `<b>` works (styled orange).
+- Build the JSON (Step 4) from the already-fetched data and run Step 5 directly.
+
+**No prior analysis:** proceed normally — the card uses the built-in fallback. Optionally suggest running `analyze-garmin-run` first for a richer analysis card.
 
 ## Edge cases
 
 - **No splits**: Show only summary stats, skip chart
 - **Very short run** (< 3 splits): Show simplified chart
-- **No VDOT zones**: Skip VDOT card, show only metrics
+- **No VDOT zones**: omit VDOT from the main card (all other metrics unaffected)
 - **Non-running activity**: Adapt (cycling = power-based, etc.)
 - **Missing HR data**: Show only pace bars without HR line
 

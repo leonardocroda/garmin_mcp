@@ -1,6 +1,6 @@
 ---
 name: analyze-garmin-run
-description: Analyze and evaluate running workouts against personalized Jack Daniels VDOT pace zones (loaded from vdot_zones.json), Garmin's threshold-based HR zones, and full context from Garmin (elevation, weather, sleep, HRV, resting HR, training readiness, training load). Use this skill whenever the user asks to evaluate, review, critique, or analyze a run — e.g. "avalia meu treino de hoje", "como foi a corrida de ontem", "analisa minha série de treinos da semana", "avalie o longão de sábado".
+description: Analyze and evaluate running workouts against personalized Jack Daniels VDOT pace zones (loaded from vdot_zones.json), Garmin's threshold-based HR zones, and full context from Garmin (elevation, weather, sleep, HRV, resting HR, training readiness, training load). Use this skill whenever the user asks to evaluate, review, critique, or analyze a run — e.g. "avalia meu treino de hoje", "como foi a corrida de ontem", "analisa minha série de treinos da semana", "avalie o longão de sábado". Can chain into generate-run-summary-image to attach the verdict to a shareable story image when the user also asks for a visual summary.
 ---
 
 # Analyze Garmin Run Skill
@@ -135,6 +135,17 @@ Structure every single-activity analysis as:
 ```
 
 For **series/week reviews**, use a comparison table (date, type, pace, zone match, TE, sleep, readiness, note) and call out trends: accumulating load, drifting easy paces, sleep degradation, repeated execution errors.
+
+## Chaining with generate-run-summary-image (visual summary)
+
+When the user asks for an image/story/post of the same run — either in the same request ("analisa meu treino e gera um story") or right after the analysis — chain into the `generate-run-summary-image` skill instead of restarting it from scratch:
+
+1. **Skip its Steps 1–3**: the activity is already resolved, the data is fetched, and the intent is already determined here. Reuse the fetched activity + splits + weather; do not re-call Garmin.
+2. **Distill the verdict** into 2–3 plain-text sentences in Portuguese (≤ ~320 chars) for the image's "Análise do Treino" card: lead with the verdict in words (e.g. "Excelente execução" / "Execução acima do alvo" / "Ajuste adequado ao contexto"), then the strongest 1–2 findings. This replaces the image skill's naive auto-generated analysis. The card inserts raw HTML: markdown does NOT render; `<b>` works (styled orange).
+3. **Pass the intent as `workout_type`** (affects texts only — the image chart is driven 100% by Garmin's `intensityType` data): sustentado/tempo → `tempo`, tiros/intervalado → `interval`, race/teste → `race`, longão → `long`, fácil/rodagem → `easy`; omit for neutral labels.
+4. Build the JSON data file from the already-fetched data (`activity_id`, `date`, `location`, `splits` with Garmin's `intensityType` passed through unchanged, `vdot`) plus `workout_type` and the distilled `analysis_text`, then run the image script (its Step 5).
+
+Never fabricate splits or metrics in the handoff — if a field wasn't fetched, leave it out of the JSON.
 
 ## Triggers (examples)
 
