@@ -255,6 +255,24 @@ def entrevista_interativa() -> dict:
         except ValueError:
             print("❌ Valor inválido. Use números apenas.")
 
+    # Perguntar data do teste
+    print()
+    print("Qual foi a data do teste? (AAAA-MM-DD) [Enter = hoje]")
+    while True:
+        data_str = input("Data: ").strip()
+        if not data_str:
+            test_date = date.today().isoformat()
+            break
+        try:
+            parsed = date.fromisoformat(data_str)
+            if parsed > date.today():
+                print("❌ A data do teste não pode ser no futuro.")
+                continue
+            test_date = parsed.isoformat()
+            break
+        except ValueError:
+            print("❌ Formato inválido. Use AAAA-MM-DD.")
+
     # Calcular VDOT
     vdot = round(calculate_vdot(distancia_metros, total_seconds), 1)
 
@@ -298,7 +316,7 @@ def entrevista_interativa() -> dict:
     config = {
         "vdot": vdot,
         "source": f"{distancia_info['name']} em {tempo_str}",
-        "test_date": date.today().isoformat(),
+        "test_date": test_date,
         "distancia_metros": distancia_metros,
         "tempo_segundos": total_seconds,
         "zones": zonas,
