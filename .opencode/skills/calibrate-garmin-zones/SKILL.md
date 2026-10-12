@@ -1,3 +1,8 @@
+---
+name: calibrate-garmin-zones
+description: Interactive interview that computes personalized Jack Daniels VDOT pace zones from the runner's latest test result (1500m, 3K, 5K, 10K, half, marathon) and saves them to vdot_zones.json for the other Garmin skills to use. Run this when the user asks to calibrate or update their zones/paces ("calibra minhas zonas", "atualiza meus ritmos"), reports a new test result ("fiz um novo teste", "recalcula minhas zonas"), wants to see current zones ("mostra minhas zonas atuais"), or when analyze-garmin-run / create-garmin-training need zones and vdot_zones.json does not exist yet. Never silently change zones — always interview first.
+---
+
 # Skill: calibrate-garmin-zones
 
 # Calibração de Zonas VDOT para Garmin MCP
