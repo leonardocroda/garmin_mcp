@@ -608,7 +608,10 @@ def main():
     )
     args = parser.parse_args()
 
-    with open(args.data_file, "r", encoding="utf-8") as f:
+    # utf-8-sig: tolera data files gravados com BOM (ex.: PowerShell
+    # Set-Content -Encoding UTF8 no Windows adiciona BOM e o json.load
+    # com "utf-8" puro falharia em "Expecting value: line 1 column 1").
+    with open(args.data_file, "r", encoding="utf-8-sig") as f:
         activity_data = json.load(f)
 
     png_path = generate_summary_image(

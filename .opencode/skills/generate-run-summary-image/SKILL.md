@@ -64,6 +64,18 @@ Write the fetched data to a JSON file, e.g. `~/.opencode/tmp/run_data_{activity_
 }
 ```
 
+> **⚠️ Gravando o arquivo (pitfall conhecido):** não passe esse JSON cru como `content` da ferramenta de escrita de arquivos — argumentos cujo texto parseia como JSON podem ser convertidos em objeto pela camada de ferramentas e rejeitados (`content: Expected string`), mesmo com o conteúdo correto. Gere o arquivo com um mini-script Python builder e rode-o uma vez (sintaxe Python não é parseável como JSON; para strings com acentos use escapes `\uXXXX` no código — à prova de codepage de shell Windows):
+>
+> ```python
+> # build_run_data.py
+> import json
+> data = {...}  # mesmo shape do exemplo acima, como dict Python
+> with open("~/.opencode/tmp/run_data_{activity_id}.json", "w", encoding="utf-8") as f:
+>     json.dump(data, f)  # ensure_ascii=True (default) → arquivo 100% ASCII
+> ```
+>
+> Alternativa sem JSON em disco: um único script que importa `generate_summary_image` deste diretório e passa o dict direto (ver docstring do script). O carregador do script também aceita data files com BOM (`utf-8-sig`), então JSON gravado via PowerShell também funciona.
+
 - `workout_type`: **optional** — `tempo` | `interval` | `race` | `long` | `easy`. Affects ONLY the story texts; omit for neutral labels.
 - `analysis_text`: **optional handoff** — the verdict distilled from `analyze-garmin-run` (see "Chaining" below). Without it, the script falls back to a naive built-in analysis.
 - `vdot`: **optional** — from `.opencode/skills/calibrate-garmin-zones/vdot_zones.json`.
