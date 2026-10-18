@@ -545,8 +545,44 @@ def init_api(email, password):
     return garmin
 
 
+def _prefer_ipv4_for_garmin() -> None:
+    """Prefer IPv4 when resolving ``*.garmin.com`` hosts (broken-IPv6 workaround).
+
+    Some networks advertise IPv6 (AAAA records for e.g. connectapi.garmin.com)
+    but silently black-hole the traffic. Python's requests/urllib3 try each
+    resolved address in order, and the ``timeout`` kwarg does not cover DNS
+    resolution or the per-address iteration, so every dead IPv6 address
+    consumes a full connect timeout and Garmin API calls appear to hang
+    forever (observed as "Request timed out" on every MCP tool call).
+
+    Filtering AAAA answers for Garmin hosts keeps the server responsive on
+    such machines and is a no-op on healthy networks (where IPv6 either works
+    or is absent). Remove once IPv6 is fixed at the machine/router level.
+    """
+    import socket
+
+    _orig_getaddrinfo = socket.getaddrinfo
+
+    def _getaddrinfo_prefer_ipv4(host, port, family=0, type=0, proto=0, flags=0):
+        results = _orig_getaddrinfo(host, port, family, type, proto, flags)
+        if (
+            family in (0, socket.AF_UNSPEC)
+            and isinstance(host, str)
+            and host.endswith(".garmin.com")
+        ):
+            ipv4 = [r for r in results if r[0] == socket.AF_INET]
+            if ipv4:
+                return ipv4
+        return results
+
+    socket.getaddrinfo = _getaddrinfo_prefer_ipv4
+
+
 def main():
     """Initialize the MCP server and register all tools"""
+
+    # Broken-IPv6 workaround: install before any Garmin network call runs.
+    _prefer_ipv4_for_garmin()
 
     # On Windows, stdout runs in text mode and translates \n to \r\n, which
     # breaks the MCP stdio framing that Claude Desktop and other clients expect.

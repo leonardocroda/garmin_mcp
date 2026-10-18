@@ -1,11 +1,16 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "mcp": {
-    "garmin": {
-      "type": "local",
-      "command": ["uv", "run", "garmin-mcp"],
-      "enabled": true,
-      "timeout": 30000
+    "servers": {
+      "garmin": {
+        "type": "local",
+        "command": ["uv", "run", "garmin-mcp"],
+        "timeout": {
+          "startup": 60000,
+          "catalog": 60000,
+          "execution": 180000
+        }
+      }
     }
   }
 }
